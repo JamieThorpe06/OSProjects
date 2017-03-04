@@ -35,5 +35,9 @@ public class SleepingBarber {
 
 
 	}
+	
+	// What is the delay number passed to the threads?
+	// Does it have anything to do with the min and max cut and arrive times?
+	// If so, what's the point? Can't we get these times from MyPanelTop?
 
 }

@@ -6,7 +6,7 @@ public class Customer extends Thread {
 	private MyCanvas myCanvas;
 	private Semaphore s;
 	private Semaphore delaySem;
-	private MyPanelTop pt;
+	private MyPanelTop pt; // for printing to debug panel
 	
 	private boolean isAlive = false;
 	private boolean isWaiting = false;
@@ -24,20 +24,29 @@ public class Customer extends Thread {
 	
 	public void run() {
 		while(true) {
+			System.out.println("I am the Customer running");
 			
 			if (isAlive) {
 				
+				try {
+					this.sleep((long)Math.random()*delayTime);
+				} catch (Exception e) {
+					System.out.println("Exception thrown: " + e.toString());
+				}
+				
 				s.P();
 				if (wr.isEmpty() && wr.isBarberGoingToSleep()){
+					wr.setBarberGoingToSleep(false);
+					pt.debugAppend("Customer -> Waking up the barber");
 					delaySem.V();
 				}
 				if (!wr.isFull()){
 					wr.addCust();
 					myCanvas.enterShop();
+					pt.debugAppend("Customer -> Joining the waiting room");
 				}
 				s.V();
 				
-				// Check order of code and signaling
 			}
 			
 			else {

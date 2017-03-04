@@ -354,5 +354,3 @@ public class MyCanvas extends Canvas {
         }
     }
 }
-
-

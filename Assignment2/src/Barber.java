@@ -6,7 +6,7 @@ public class Barber extends Thread {
 	private MyCanvas myCanvas;
 	private Semaphore s;
 	private Semaphore delaySem;
-	private MyPanelTop pt;
+	private MyPanelTop pt; // for printing to debug panel
 	
 	private boolean isAlive = false;
 	private boolean isWaiting = false;
@@ -24,10 +24,33 @@ public class Barber extends Thread {
 	
 	public void run() {
 		while(true) {
+			System.out.println("I am the Barber running");
 			
 			if (isAlive) {
-				// Do main code here
-				// Make sure to check if the thread is alive, OR don't tell it to start in constructor 
+				
+				s.P();
+				
+				if(wr.isEmpty()){
+					wr.setBarberGoingToSleep(true);
+					pt.debugAppend("Barber -> Going to sleep");
+					s.V();
+					delaySem.P();
+					s.P();
+					pt.debugAppend("Barber -> Has been woken up");
+				}
+				
+				pt.debugAppend("Barber -> Getting a customer");
+				wr.removeCust();
+				myCanvas.moveToChair();
+				
+				s.V();
+				
+				try {
+					this.sleep((long)Math.random()*delayTime);
+				} catch (Exception e) {
+					System.out.println("Exception thrown: " + e.toString());
+				}
+	 
 			}
 			else {
 				waitThread();
@@ -48,12 +71,14 @@ public class Barber extends Thread {
 				notify();
 			}
 		}
+		pt.debugAppend("Barber -> I'm alive!");
 	}
 
 	public void kill() {
 		if (isAlive){
 			isAlive = false;
 		}
+		pt.debugAppend("Barber -> You killed the barber");
 	}
 	
 	public synchronized void waitThread(){

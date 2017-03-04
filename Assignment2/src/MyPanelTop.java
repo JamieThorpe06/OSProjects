@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -171,8 +172,29 @@ public class MyPanelTop extends JPanel implements ActionListener,
 			debug.append("Customers stop arriving\n");
 		}
 		
-		if (ae.getSource() == viewOutput) {
-			// what is this for?
+		if (ae.getSource() == viewOutput) { // Is this implemented correctly?
+			if(outputOn){
+				outputOn = false;
+			}
+			else{
+				outputOn = true;
+			}
+		}
+		
+		if (ae.getSource() == minArrival) {
+			minArrivalTime = Integer.parseInt(minArrival.getText());
+		}
+		
+		if (ae.getSource() == maxArrival) {
+			maxArrivalTime = Integer.parseInt(maxArrival.getText());
+		}
+		
+		if (ae.getSource() == minCut) {
+			minCutTime = Integer.parseInt(minCut.getText());
+		}
+		
+		if (ae.getSource() == maxCut) {
+			maxCutTime = Integer.parseInt(maxCut.getText());
 		}
 					
 
