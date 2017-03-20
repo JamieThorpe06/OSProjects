@@ -16,6 +16,7 @@ public class MyPanelTop extends JPanel implements ActionListener,
 	private static TextArea debug;
 	private static JFrame output = new JFrame();
 	private boolean outputOn = true;
+	
 	private int minArrivalTime;
 	private int maxArrivalTime;
 	private int minCutTime;
@@ -172,7 +173,7 @@ public class MyPanelTop extends JPanel implements ActionListener,
 			debug.append("Customers stop arriving\n");
 		}
 		
-		if (ae.getSource() == viewOutput) { // Is this implemented correctly?
+		if (ae.getSource() == viewOutput) { 
 			if(outputOn){
 				outputOn = false;
 			}
@@ -181,23 +182,48 @@ public class MyPanelTop extends JPanel implements ActionListener,
 			}
 		}
 		
+		/////////////////////////////////
+		///// Following updates the arrival and cut
+		///// time variables if they are changed in
+		///// the panel
+		/////////////////////////////////
+		
 		if (ae.getSource() == minArrival) {
 			minArrivalTime = Integer.parseInt(minArrival.getText());
+			debug.append("Min Arrival time is " + minArrivalTime + "\n");
+			
+			if(minArrivalTime <= maxArrivalTime){
+				cust.resetTimes(minArrivalTime, maxArrivalTime);
+			}
 		}
 		
 		if (ae.getSource() == maxArrival) {
 			maxArrivalTime = Integer.parseInt(maxArrival.getText());
+			debug.append("Max Arrival time is " + maxArrivalTime + "\n");
+			
+			if(minArrivalTime <= maxArrivalTime){
+				cust.resetTimes(minArrivalTime, maxArrivalTime);
+			}
 		}
 		
 		if (ae.getSource() == minCut) {
 			minCutTime = Integer.parseInt(minCut.getText());
+			debug.append("Min Cut time is " + minCutTime + "\n");
+			
+			if(minCutTime <= maxCutTime){
+				barber.resetTimes(minCutTime, maxCutTime);
+			}
 		}
 		
 		if (ae.getSource() == maxCut) {
 			maxCutTime = Integer.parseInt(maxCut.getText());
+			debug.append("Max Cut time is " + maxCutTime + "\n");
+			
+			if(minCutTime <= maxCutTime){
+				barber.resetTimes(minCutTime, maxCutTime);
+			}
 		}
 					
 
 	} // end actionPerformed, implementation of ActionListener
 }
-
