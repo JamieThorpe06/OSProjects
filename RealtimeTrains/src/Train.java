@@ -13,10 +13,15 @@ public class Train extends Thread {
 	
 	private int currentNode = 0;
 	private FAArray fa;
-	private Semaphore sem;
+	private boolean collisionStop = false;
+	
+	private boolean trainStarted = false;
+	private Semaphore twoStart;
+	private Semaphore collision = new Semaphore(0, 1);
+	private Semaphore speedStop = new Semaphore(0, 1);
 
 	public Train(String name, int timedelay, int trainnumber,
-			ReedContacts ReedContactsIN, FAArray array, Semaphore s) {
+			ReedContacts ReedContactsIN, FAArray array) {
 		super(name);
 		msdelay = timedelay;
 		TrainNumber = trainnumber + 1;
@@ -24,17 +29,19 @@ public class Train extends Thread {
 		if (TrainNumber == 1) {
 			SetSpeed(14);
 			SetDesiredSpeed(14);
+			trainStarted = true;
 		} else {
 			SetSpeed(2);
 			SetDesiredSpeed(2);// for now
+			twoStart = new Semaphore(1, 1);
 		}
 		
 		fa = array;
-		sem = s;
+		
 	}// end constructor
 	
 	public boolean trainStarted(){
-		return currentNode != 0;
+		return trainStarted;
 	}
 	
 	public int getSignal(){
@@ -83,6 +90,7 @@ public class Train extends Thread {
 
 	public void Reset() {
 		// you reset the train here
+		//RESET SEMAPHORES AND BOOLEANS
 		TrainPosition.ResetAll();
 		SetSwitch2(false);
 		SetSwitch4(false);
@@ -96,11 +104,31 @@ public class Train extends Thread {
 		// JOptionPane.showMessageDialog(null, "Train: " + TrainNumber +
 		// " reset" );
 	}
+	
+	public Semaphore getTwoStart() {
+		return twoStart;
+	}
+	
+	public void setTrainStarted(boolean start) {
+		trainStarted = start;
+	}
 
 	public void StopTrain() {
 		// you stop the train here
 		JOptionPane.showMessageDialog(null, "Train: " + TrainNumber
 				+ " You stop it here...");
+	}
+	
+	public void urgentCollision() {
+		collision.P();
+	}
+	
+	public Semaphore getColSem(){
+		return collision;
+	}
+	
+	public int getSpeed(){
+		return speed;
 	}
 
 	public void SetSpeed(int speedIN) {
@@ -123,20 +151,36 @@ public class Train extends Thread {
 		// + DesiredSpeed);
 
 	}
+	
+	public void setColStop(boolean stop){
+		collisionStop = stop;
+	}
+	
+	public boolean getColStop() {
+		return collisionStop;
+	}
 
 	public void run() {
+		
 		while (true) {
-
-			try {
-				mytime = msdelay;// (long) (Math.random() * msdelay);
-				Thread.sleep(mytime);
-			} catch (Exception e) {
-				System.out.println("exception in thread sleep" + e.toString());
+			System.out.println(Thread.currentThread().getName() + " is running");
+			
+			if (collisionStop){
+				urgentCollision();
 			}
+			
+			else{
 
-			sem.P();
-			TrainPosition.MoveTrainPosition();
-			sem.V();
+				try {
+					mytime = msdelay;// (long) (Math.random() * msdelay);
+					Thread.sleep(mytime);
+				} catch (Exception e) {
+					System.out.println("exception in thread sleep" + e.toString());
+				}
+
+				TrainPosition.MoveTrainPosition();
+		
+			}
 		}
 	}
 }

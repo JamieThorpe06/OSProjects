@@ -17,10 +17,10 @@ public class realtimetrains {
 
 		ReedContacts ReedContacts = new ReedContacts();
 		FAArray fa = new FAArray();
-		Semaphore sem = new Semaphore();
-		Train Train1 = new Train("Train1", 300, 0, ReedContacts, fa, sem);
-		Train Train2 = new Train("Train2", 3000, 1, ReedContacts, fa, sem);
-		MyCollisionController mcc = new MyCollisionController(ReedContacts, Train1, Train2, sem);
+
+		Train Train1 = new Train("Train1", 300, 0, ReedContacts, fa);
+		Train Train2 = new Train("Train2", 3000, 1, ReedContacts, fa);
+		MyCollisionController mcc = new MyCollisionController(ReedContacts, Train1, Train2);
 
 		GUIControlPanel myGUIControlPanel = new GUIControlPanel(Train1, Train2);
 		GUITrackPanel myGUITrackPanel = new GUITrackPanel(myGUIControlPanel,

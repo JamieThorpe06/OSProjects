@@ -8,14 +8,12 @@ public class MyCollisionController extends Thread{
 	Train train1;
 	Train train2;
 	DfaCanvas dfaCanvas;
-	Semaphore sem;
 	
-	MyCollisionController(ReedContacts reed, Train t1, Train t2, Semaphore s){
+	MyCollisionController(ReedContacts reed, Train t1, Train t2){
 		
 		rc = reed;
 		train1 = t1;
 		train2 = t2;
-		sem = s;
 		
 		// Display the implemented DFA to demonstrate each trains state.
 		JFrame dfa = new JFrame ( );
@@ -29,8 +27,8 @@ public class MyCollisionController extends Thread{
 	}
 	
 	public void run(){
-		System.out.println("Controller is running");
 		while(true){
+			System.out.println("Controller is running");
 			
 			try {
 				Thread.sleep(30);
@@ -38,10 +36,14 @@ public class MyCollisionController extends Thread{
 				System.out.println("exception in thread sleep" + e.toString());
 			}
 			
-			sem.P();
+			//System.out.println("Controller is awake");
 			
-			System.out.println("Controller is awake");
-			for(int i = 0; i < 16; i++){
+			if (train2.trainStarted()){
+				checkTrain1collisions();
+				checkTrain2collisions();
+			}
+			
+			for(int i = 1; i < 16; i++){
 				boolean tripped = rc.readASwitch(i);
 				
 				if(tripped){
@@ -58,7 +60,6 @@ public class MyCollisionController extends Thread{
 				}
 			}
 			
-			sem.V();
 		}
 	}
 	
@@ -82,16 +83,72 @@ public class MyCollisionController extends Thread{
 	public void checkTrain1toStartTrain2(){
 		// check if current node of each are two apart; changes if one of the switches are flipped
 		
-		int check = train2.getCurrent();
-		for(int i = 0; i <= 2; i++){
-			if(check == train1.getCurrent()){
-				return;
-			}
-			check = train2.getNext(check);
+		if(lookAhead(train1, train2) > 2){
+			train2.getTwoStart().V();
+			train2.setTrainStarted(true);
 		}
-		train2.advance();
-		dfaCanvas.update(train1.getCurrent(), train2.getCurrent());
 		
+	}
+	
+	public void checkTrain1collisions(){
+		
+		int dist = lookAhead(train2, train1);
+		
+		if (dist == 1){
+			train1.setColStop(true);
+		}
+		else if (dist == 2){
+			train1.SetSpeed((train1.GetDesiredSpeed())/2);
+		}
+		else{
+			if(train1.getColStop()){
+				train1.getColSem().V();
+				train1.setColStop(false);
+			}
+			if(train1.getSpeed() != train1.GetDesiredSpeed()){
+				train1.SetSpeed(train1.GetDesiredSpeed());
+			}
+		}
+	}
+	
+	public void checkTrain2collisions(){
+		
+		int dist = lookAhead(train1, train2);
+		
+		if (dist == 1){
+			train2.setColStop(true);
+		}
+		else if (dist == 2){
+			train2.SetSpeed((train2.GetDesiredSpeed())/2);
+		}
+		else{
+			if(train2.getColStop()){
+				train2.getColSem().V();
+				train2.setColStop(false);
+			}
+			if(train2.getSpeed() != train2.GetDesiredSpeed()){
+				train2.SetSpeed(train2.GetDesiredSpeed());
+			}
+		}
+		
+	}
+	
+	// Return the distance between the trains, or 3 if it is further away than 2 nodes
+	// For sake of switch coordination, also check "ahead"'s next node
+	public int lookAhead(Train ahead, Train behind){
+		
+		int check = behind.getCurrent();
+		int i = 0;
+		
+		while(i < 3){
+			if(check == ahead.getCurrent() || check == ahead.getNext(ahead.getCurrent())){
+				return i;
+			}
+			check = behind.getNext(check);
+			i++;
+		}
+		
+		return i;
 	}
 
 }
