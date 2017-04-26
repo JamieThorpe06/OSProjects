@@ -13,10 +13,11 @@ public class Train extends Thread {
 	
 	private int currentNode = 0;
 	private FAArray fa;
-	private boolean collisionStop = false;
 	
 	private boolean trainStarted = false;
-	private Semaphore twoStart;
+	private boolean collisionStop = false;
+	private boolean speedZero = false;
+	private Semaphore twoStart = new Semaphore(0, 1);
 	private Semaphore collision = new Semaphore(0, 1);
 	private Semaphore speedStop = new Semaphore(0, 1);
 
@@ -33,7 +34,6 @@ public class Train extends Thread {
 		} else {
 			SetSpeed(2);
 			SetDesiredSpeed(2);// for now
-			twoStart = new Semaphore(1, 1);
 		}
 		
 		fa = array;
@@ -90,23 +90,36 @@ public class Train extends Thread {
 
 	public void Reset() {
 		// you reset the train here
-		//RESET SEMAPHORES AND BOOLEANS
+		
+		currentNode = 0;
 		TrainPosition.ResetAll();
 		SetSwitch2(false);
 		SetSwitch4(false);
 		if (TrainNumber == 1) {
 			SetSpeed(14);
 			SetDesiredSpeed(14);
+			trainStarted = true;
 		} else {
 			SetSpeed(2);
 			SetDesiredSpeed(2);// for now
+			if(trainStarted){
+				trainStarted = false;
+			}
 		}
+		
+		collisionStop = false;
+		speedZero = false;
+		collision.V();
+		speedStop.V();
+		twoStart.V();
+		
 		// JOptionPane.showMessageDialog(null, "Train: " + TrainNumber +
 		// " reset" );
 	}
 	
-	public Semaphore getTwoStart() {
-		return twoStart;
+	public void release() {
+		System.out.println("Train 2 released");
+		twoStart.V();
 	}
 	
 	public void setTrainStarted(boolean start) {
@@ -117,14 +130,16 @@ public class Train extends Thread {
 		// you stop the train here
 		JOptionPane.showMessageDialog(null, "Train: " + TrainNumber
 				+ " You stop it here...");
+		
+		speedZero = true;
 	}
 	
-	public void urgentCollision() {
-		collision.P();
+	public void spStop() {
+		speedStop.P();
 	}
 	
-	public Semaphore getColSem(){
-		return collision;
+	public boolean getSpeedZero() {
+		return speedZero;
 	}
 	
 	public int getSpeed(){
@@ -138,6 +153,7 @@ public class Train extends Thread {
 		msdelay = (15 - speed) * 30;
 		// JOptionPane.showMessageDialog(null, "Train: " + TrainNumber +
 		// " Speed now is " + speed + "msdelay " + msdelay );
+
 	}
 
 	public synchronized int GetDesiredSpeed() {
@@ -149,7 +165,17 @@ public class Train extends Thread {
 		SetSpeed(speedIN);
 		// System.out.println("Train " + TrainNumber + "  Desired speed is "
 		// + DesiredSpeed);
+		
+		if(speedZero && speedIN != 0){
+			speedZero = false;
+			speedStop.V();
+		}
 
+	}
+	
+	public void urgentCollision() {
+		System.out.println("Train" + TrainNumber + " collision stop");
+		collision.P();
 	}
 	
 	public void setColStop(boolean stop){
@@ -159,14 +185,26 @@ public class Train extends Thread {
 	public boolean getColStop() {
 		return collisionStop;
 	}
-
+	
+	public void colSafe() {
+		collision.V();
+	}
+	
 	public void run() {
 		
 		while (true) {
 			System.out.println(Thread.currentThread().getName() + " is running");
 			
+			if (!trainStarted) {
+				twoStart.P();
+			}
+			
 			if (collisionStop){
 				urgentCollision();
+			}
+			
+			if (speedZero){
+				spStop();
 			}
 			
 			else{

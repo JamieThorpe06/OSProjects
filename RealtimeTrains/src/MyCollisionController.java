@@ -28,7 +28,7 @@ public class MyCollisionController extends Thread{
 	
 	public void run(){
 		while(true){
-			System.out.println("Controller is running");
+			//System.out.println("Controller is running");
 			
 			try {
 				Thread.sleep(30);
@@ -51,7 +51,7 @@ public class MyCollisionController extends Thread{
 					checkTrain1(i);
 					
 					if(train2.trainStarted()){
-						System.out.println("Train2 started");
+						//System.out.println("Train2 started");
 						checkTrain2(i);
 					}
 					else{
@@ -84,17 +84,23 @@ public class MyCollisionController extends Thread{
 		// check if current node of each are two apart; changes if one of the switches are flipped
 		
 		if(lookAhead(train1, train2) > 2){
-			train2.getTwoStart().V();
 			train2.setTrainStarted(true);
+			train2.release();
+			
 		}
 		
 	}
+	
+	// Do we need to check getSpeedZero in the collision methods?
+	// If it is speed zero and we move forward and then the "ahead" train (behind in switch) is released,
+	// will it check again for collisions before colliding?
+	// Or  if we don't check, could the trains end up stalled for a while?
 	
 	public void checkTrain1collisions(){
 		
 		int dist = lookAhead(train2, train1);
 		
-		if (dist == 1){
+		if (dist == 1 && !train2.getColStop() && !train2.getSpeedZero()){ 
 			train1.setColStop(true);
 		}
 		else if (dist == 2){
@@ -102,7 +108,7 @@ public class MyCollisionController extends Thread{
 		}
 		else{
 			if(train1.getColStop()){
-				train1.getColSem().V();
+				train1.colSafe();
 				train1.setColStop(false);
 			}
 			if(train1.getSpeed() != train1.GetDesiredSpeed()){
@@ -111,11 +117,11 @@ public class MyCollisionController extends Thread{
 		}
 	}
 	
-	public void checkTrain2collisions(){
+	public void checkTrain2collisions(){ 
 		
 		int dist = lookAhead(train1, train2);
 		
-		if (dist == 1){
+		if (dist == 1 && !train1.getColStop() && !train1.getSpeedZero()){
 			train2.setColStop(true);
 		}
 		else if (dist == 2){
@@ -123,7 +129,7 @@ public class MyCollisionController extends Thread{
 		}
 		else{
 			if(train2.getColStop()){
-				train2.getColSem().V();
+				train2.colSafe();
 				train2.setColStop(false);
 			}
 			if(train2.getSpeed() != train2.GetDesiredSpeed()){
@@ -149,6 +155,11 @@ public class MyCollisionController extends Thread{
 		}
 		
 		return i;
+	}
+	
+	public void reset(){
+		dfaCanvas.update(0,0);
+		
 	}
 
 }

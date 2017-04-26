@@ -22,7 +22,7 @@ public class realtimetrains {
 		Train Train2 = new Train("Train2", 3000, 1, ReedContacts, fa);
 		MyCollisionController mcc = new MyCollisionController(ReedContacts, Train1, Train2);
 
-		GUIControlPanel myGUIControlPanel = new GUIControlPanel(Train1, Train2);
+		GUIControlPanel myGUIControlPanel = new GUIControlPanel(Train1, Train2, mcc);
 		GUITrackPanel myGUITrackPanel = new GUITrackPanel(myGUIControlPanel,
 				Train1, Train2);
 
