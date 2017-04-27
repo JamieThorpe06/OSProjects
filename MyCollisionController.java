@@ -4,10 +4,10 @@ import javax.swing.JFrame;
 
 public class MyCollisionController extends Thread{
 	
-	ReedContacts rc;
-	Train train1;
-	Train train2;
-	DfaCanvas dfaCanvas;
+	private ReedContacts rc;
+	private Train train1;
+	private Train train2;
+	private DfaCanvas dfaCanvas;
 	
 	MyCollisionController(ReedContacts reed, Train t1, Train t2){
 		
@@ -27,16 +27,15 @@ public class MyCollisionController extends Thread{
 	}
 	
 	public void run(){
-		System.out.println("Controller is running");
 		while(true){
+			//System.out.println("Controller is running");
 			
 			try {
 				Thread.sleep(30);
 			} catch (Exception e) {
 				System.out.println("exception in thread sleep" + e.toString());
 			}
-			
-			System.out.println("Controller is awake");
+
 			
 			if (train2.trainStarted()){
 				checkTrain1collisions();
@@ -51,7 +50,7 @@ public class MyCollisionController extends Thread{
 					checkTrain1(i);
 					
 					if(train2.trainStarted()){
-						System.out.println("Train2 started");
+						//System.out.println("Train2 started");
 						checkTrain2(i);
 					}
 					else{
@@ -59,6 +58,12 @@ public class MyCollisionController extends Thread{
 					}
 				}
 			}
+			
+			//if(train1.getResetPlans() || train2.getResetPlans()){
+				//train1.performReset();
+				//train2.performReset();
+				//reset();
+			//}
 			
 		}
 	}
@@ -81,28 +86,34 @@ public class MyCollisionController extends Thread{
 	}
 	
 	public void checkTrain1toStartTrain2(){
-		// check if current node of each are two apart; changes if one of the switches are flipped
+		// check if current node of each are two apart
 		
-		if(lookAhead(train1, train2) > 2){
-			train2.advance();
-			dfaCanvas.update(train1.getCurrent(), train2.getCurrent());
+		if(lookAhead(train1, train2) > 1){
+			train2.setTrainStarted(true);
+			train2.release();
+			
 		}
 		
 	}
+	
 	
 	public void checkTrain1collisions(){
 		
 		int dist = lookAhead(train2, train1);
 		
+		//if (dist == 1 && !train2.getColStop() && !train2.getSpeedZero()){ 
 		if (dist == 1){
 			train1.setColStop(true);
 		}
+		
 		else if (dist == 2){
 			train1.SetSpeed((train1.GetDesiredSpeed())/2);
 		}
+		
 		else{
 			if(train1.getColStop()){
-				//move train again
+				train1.colSafe();
+				train1.setColStop(false);
 			}
 			if(train1.getSpeed() != train1.GetDesiredSpeed()){
 				train1.SetSpeed(train1.GetDesiredSpeed());
@@ -110,10 +121,11 @@ public class MyCollisionController extends Thread{
 		}
 	}
 	
-	public void checkTrain2collisions(){
+	public void checkTrain2collisions(){ 
 		
 		int dist = lookAhead(train1, train2);
 		
+		//if (dist == 1 && !train1.getColStop() && !train1.getSpeedZero()){
 		if (dist == 1){
 			train2.setColStop(true);
 		}
@@ -122,7 +134,8 @@ public class MyCollisionController extends Thread{
 		}
 		else{
 			if(train2.getColStop()){
-				//move train again
+				train2.colSafe();
+				train2.setColStop(false);
 			}
 			if(train2.getSpeed() != train2.GetDesiredSpeed()){
 				train2.SetSpeed(train2.GetDesiredSpeed());
@@ -147,6 +160,27 @@ public class MyCollisionController extends Thread{
 		}
 		
 		return i;
+	}
+	
+	// Check if the switches are clear, and it is safe to switch tracks
+	public boolean switchClear(int switchNum) {
+		int train1Pos = train1.getCurrent();
+		int train2Pos = train2.getCurrent();
+		
+		if(switchNum == 2){
+			return !(train1Pos == 5 || train1Pos == 6 || train2Pos == 5 || train2Pos == 6);
+		}
+		
+		else if(switchNum == 4){
+			return !(train1Pos == 8 || train1Pos == 9 || train2Pos == 8 || train2Pos == 9);
+		}
+		
+		return true;
+	}
+	
+	public void reset(){
+		dfaCanvas.update(0,0);
+		
 	}
 
 }

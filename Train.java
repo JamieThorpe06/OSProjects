@@ -10,14 +10,19 @@ public class Train extends Thread {
 	private int DesiredSpeed = 14;
 	private Boolean Switch2 = false;
 	private Boolean Switch4 = false;
-	
+
 	private int currentNode = 0;
 	private FAArray fa;
-	private boolean collisionStop = false;
-	private Semaphore collision = new Semaphore(0, 1);
 
-	public Train(String name, int timedelay, int trainnumber,
-			ReedContacts ReedContactsIN, FAArray array) {
+	private boolean planReset = false;
+	private boolean trainStarted = false;
+	private boolean collisionStop = false;
+	private boolean speedZero = false;
+	private Semaphore twoStart = new Semaphore(0, 1);
+	private Semaphore collision = new Semaphore(0, 1);
+	private Semaphore speedStop = new Semaphore(0, 1);
+
+	public Train(String name, int timedelay, int trainnumber, ReedContacts ReedContactsIN, FAArray array) {
 		super(name);
 		msdelay = timedelay;
 		TrainNumber = trainnumber + 1;
@@ -25,31 +30,32 @@ public class Train extends Thread {
 		if (TrainNumber == 1) {
 			SetSpeed(14);
 			SetDesiredSpeed(14);
+			trainStarted = true;
 		} else {
 			SetSpeed(2);
 			SetDesiredSpeed(2);// for now
 		}
-		
+
 		fa = array;
-		
+
 	}// end constructor
-	
-	public boolean trainStarted(){
-		return currentNode != 0;
+
+	public boolean trainStarted() {
+		return trainStarted;
 	}
-	
-	public int getSignal(){
+
+	public int getSignal() {
 		return fa.getSignal(currentNode);
 	}
-	
-	public void advance(){
+
+	public void advance() {
 		currentNode = fa.getNext(currentNode);
 	}
-	
-	public int getNext(int start){
+
+	public int getNext(int start) {
 		return fa.getNext(start);
 	}
-	
+
 	public int getCurrent() {
 		return currentNode;
 	}
@@ -59,7 +65,7 @@ public class Train extends Thread {
 	}
 
 	public void SetSwitch2(boolean flag) {
-		if(Switch2!=flag && TrainNumber ==1){
+		if (Switch2 != flag && TrainNumber == 1) {
 			fa.switchThrown(2);
 		}
 		TrainPosition.SetSwitch2(flag);
@@ -71,7 +77,7 @@ public class Train extends Thread {
 	}
 
 	public void SetSwitch4(boolean flag) {
-		if(Switch4!=flag && TrainNumber ==1){
+		if (Switch4 != flag && TrainNumber == 1) {
 			fa.switchThrown(4);
 		}
 		TrainPosition.SetSwitch4(flag);
@@ -84,36 +90,68 @@ public class Train extends Thread {
 
 	public void Reset() {
 		// you reset the train here
+		planReset = true;
+	}
+	
+	public boolean getResetPlans() {
+		return planReset;
+	}
+	
+	public void performReset(){
+
+		currentNode = 0;
 		TrainPosition.ResetAll();
 		SetSwitch2(false);
 		SetSwitch4(false);
 		if (TrainNumber == 1) {
 			SetSpeed(14);
 			SetDesiredSpeed(14);
+			trainStarted = true;
 		} else {
 			SetSpeed(2);
 			SetDesiredSpeed(2);// for now
+			if (trainStarted) {
+				trainStarted = false;
+			}
 		}
+
+		collisionStop = false;
+		speedZero = false;
+		collision.V();
+		speedStop.V();
+		twoStart.V();
+		
+		planReset = false;
+
 		// JOptionPane.showMessageDialog(null, "Train: " + TrainNumber +
 		// " reset" );
 	}
 
+	public void release() {
+		System.out.println("Train 2 released");
+		twoStart.V();
+	}
+
+	public void setTrainStarted(boolean start) {
+		trainStarted = start;
+	}
+
 	public void StopTrain() {
 		// you stop the train here
-		JOptionPane.showMessageDialog(null, "Train: " + TrainNumber
-				+ " You stop it here...");
+		JOptionPane.showMessageDialog(null, "Train: " + TrainNumber + " You stop it here...");
+
+		speedZero = true;
 	}
-	
-	public void urgentCollision() {
-		collision.P();
+
+	public void spStop() {
+		speedStop.P();
 	}
-	
-	public void safeCollision() {
-		collision.V();
-		collisionStop = false;
+
+	public boolean getSpeedZero() {
+		return speedZero;
 	}
-	
-	public int getSpeed(){
+
+	public int getSpeed() {
 		return speed;
 	}
 
@@ -124,6 +162,7 @@ public class Train extends Thread {
 		msdelay = (15 - speed) * 30;
 		// JOptionPane.showMessageDialog(null, "Train: " + TrainNumber +
 		// " Speed now is " + speed + "msdelay " + msdelay );
+
 	}
 
 	public synchronized int GetDesiredSpeed() {
@@ -133,39 +172,65 @@ public class Train extends Thread {
 	public synchronized void SetDesiredSpeed(int speedIN) {
 		DesiredSpeed = speedIN;
 		SetSpeed(speedIN);
-		// System.out.println("Train " + TrainNumber + "  Desired speed is "
+		// System.out.println("Train " + TrainNumber + " Desired speed is "
 		// + DesiredSpeed);
 
+		if (speedZero && speedIN != 0) {
+			speedZero = false;
+			speedStop.V();
+		}
+
 	}
+
+	public void urgentCollision() {
+		System.out.println("Train" + TrainNumber + " collision stop");
+		//collision.P();
+	}
+
+	public void setColStop(boolean stop) {
 	
-	public void setColStop(boolean stop){
 		collisionStop = stop;
 	}
-	
+
 	public boolean getColStop() {
 		return collisionStop;
 	}
 
+	public void colSafe() {
+		collision.V();
+	}
+
 	public void run() {
-		System.out.println(Thread.currentThread().getName() + " is running");
+
 		while (true) {
+			System.out.println(Thread.currentThread().getName() + " is running");
+
+			// while loop here to prevent stutter?
 			
-			if (collisionStop){
+			if (!trainStarted) {
+				twoStart.P();
+			}
+
+			if (collisionStop) {
 				urgentCollision();
+				collision.P();
 			}
-			
-			else{
 
-				try {
-					mytime = msdelay;// (long) (Math.random() * msdelay);
-					Thread.sleep(mytime);
-				} catch (Exception e) {
-					System.out.println("exception in thread sleep" + e.toString());
-				}
-
-				TrainPosition.MoveTrainPosition();
-		
+			if (speedZero) {
+				//spStop();
+				speedStop.P();
 			}
+
+			try {
+				mytime = msdelay;// (long) (Math.random() * msdelay);
+				Thread.sleep(mytime);
+			} catch (Exception e) {
+				System.out.println("exception in thread sleep" + e.toString());
+			}
+
+			TrainPosition.MoveTrainPosition();
+
 		}
+
 	}
 }

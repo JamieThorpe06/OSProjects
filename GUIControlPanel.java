@@ -39,11 +39,13 @@ public class GUIControlPanel extends Canvas {
 	private Train Train1;
 	private Train Train2;
 	private Boolean AutoControlFlag = false;
+	private MyCollisionController mycc;
 
-	public GUIControlPanel(Train Train1IN, Train Train2IN) {
+	public GUIControlPanel(Train Train1IN, Train Train2IN, MyCollisionController cc) {
 		super();
 		Train1 = Train1IN;
 		Train2 = Train2IN;
+		mycc = cc;
 		File file = null;
 		String path = null;
 
@@ -100,6 +102,8 @@ public class GUIControlPanel extends Canvas {
 		for (int i = 0; i < 4; i++) {
 			switchOn[i] = false;
 		}
+		
+		//mycc.reset();
 		Train1.Reset();
 		Train2.Reset();
 		repaint();
@@ -108,37 +112,40 @@ public class GUIControlPanel extends Canvas {
 	// Flip a particular switch, depending on arguments passed.
 	public void flipSwitch(boolean dir, int num) {
 		if (!stopped) {
-			// Set Switch (num straight
+			// Set Switch (num straight)
 			if (dir == true) {
 				try {
-					if (num == 1) {
+					if (num == 1 && mycc.switchClear(2)) {
 						Train1.SetSwitch2(false);
 						Train2.SetSwitch2(false);
-
+						switchOn[num] = false;
 					}
-					if (num == 3) {
+					if (num == 3 && mycc.switchClear(4)) {
 						Train1.SetSwitch4(false);
 						Train2.SetSwitch4(false);
+						switchOn[num] = false;
 					}
 
 				} catch (Exception e) {
 				}
-				switchOn[num] = false;
+				
 			}
 			// Set Switch (num) curved
 			else {
 				try {
-					if (num == 1) {
+					if (num == 1 && mycc.switchClear(2)) {
 						Train1.SetSwitch2(true);
 						Train2.SetSwitch2(true);
+						switchOn[num] = true;
 					}
-					if (num == 3) {
+					if (num == 3 && mycc.switchClear(4)) {
 						Train1.SetSwitch4(true);
 						Train2.SetSwitch4(true);
+						switchOn[num] = true;
 					}
 				} catch (Exception e) {
 				}
-				switchOn[num] = true;
+				
 			}
 			repaint();
 		}
@@ -422,7 +429,9 @@ public class GUIControlPanel extends Canvas {
 	// Set the current trains speed
 		private void setSpeed(int s) {
 			if (!stopped) {
+				//System.out.println("Setting speed");
 				if (whichTrain == 1) {
+				
 					try {
 						Train1.SetDesiredSpeed(s);
 						Train1Speed = s;
@@ -430,6 +439,7 @@ public class GUIControlPanel extends Canvas {
 					}
 
 				} else {
+					
 					try {
 						Train2Speed = s;
 						Train2.SetDesiredSpeed(s);
@@ -552,8 +562,8 @@ public class GUIControlPanel extends Canvas {
 	private void stopTrain() {
 		if (!stopped) {
 			if (whichTrain == 1) {
-				Train1.StopTrain();
 				Train1Speed = 0;
+				Train1.StopTrain();
 			} else {
 				Train2Speed = 0;
 				Train2.StopTrain();
