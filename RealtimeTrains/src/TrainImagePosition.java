@@ -1,12 +1,14 @@
+//package realtimetrains;
+
 public class TrainImagePosition {
 	
-	private ReedContacts ReedContacts; 
-	private Engine1StarterTrack Engine1trackPosStart; 
-	private Engine2StarterTrack Engine2trackPosStart; 
-	private InnerTrack EnginetrackPosInner;
-	private OutterTrack EnginetrackPosOutter; 
-	private Switch2Track EngineSwitch2Pos;
-	private Switch4Track EngineSwitch4Pos;
+	private ReedContacts ReedContacts;// 
+	private Engine1StarterTrack Engine1trackPosStart;// 
+	private Engine2StarterTrack Engine2trackPosStart;// 
+	private InnerTrack EnginetrackPosInner;// 
+	private OutterTrack EnginetrackPosOutter;//
+	private Switch2Track EngineSwitch2Pos;// 
+	private Switch4Track EngineSwitch4Pos;// 
 
 	private Boolean StarterTrack = true;
 	private Boolean InnerTrack = false;
@@ -39,6 +41,7 @@ public class TrainImagePosition {
 		InnerTrack = false;
 		OutterTrack = false;
 		Switch2Track = false;
+		Switch4Track = false;
 		
 		if (TrainNumber == 0) {
 			Engine1trackPosStart.ResetTrack();
@@ -80,7 +83,6 @@ public class TrainImagePosition {
 		if (OutterTrack) {
 			mynextpoint = EnginetrackPosOutter.GetCurrentTrackPosition();
 		}
-
 		return (mynextpoint);
 	}
 

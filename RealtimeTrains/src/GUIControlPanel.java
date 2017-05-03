@@ -40,6 +40,7 @@ public class GUIControlPanel extends Canvas {
 	private Train Train2;
 	private Boolean AutoControlFlag = false;
 	private MyCollisionController mycc;
+	private Boolean waitForReset = false;
 
 	public GUIControlPanel(Train Train1IN, Train Train2IN, MyCollisionController cc) {
 		super();
@@ -103,53 +104,67 @@ public class GUIControlPanel extends Canvas {
 			switchOn[i] = false;
 		}
 		
+		// Train resets called by GUITrrackPanel before calling ResetAll here
+		// Train.Reset() and mycc.reset() sets booleans to plan a reset
+		// waitForReset set to false by MyCollisionController before repaint is called
+		// repaint() here called by MyCollisionController when reset is complete
+		
 		mycc.reset();
-		Train1.Reset();
-		Train2.Reset();
-		repaint();
+		waitForReset = true;
+		
+		//Train1.Reset();
+		//Train2.Reset();
+		//repaint();
+	}
+	
+	public void setResetWait(Boolean flag){
+		waitForReset = flag;
 	}
 
 	// Flip a particular switch, depending on arguments passed.
 	public void flipSwitch(boolean dir, int num) {
-		if (!stopped) {
+		if (!stopped && !waitForReset) {
 			// Set Switch (num straight)
 			if (dir == true) {
 				try {
-					if (num == 1) {
+					if (num == 1 && mycc.switchClear(2)) {
 						Train1.SetSwitch2(false);
 						Train2.SetSwitch2(false);
-
+						switchOn[num] = false;
 					}
-					if (num == 3) {
+					if (num == 3 && mycc.switchClear(4)) {
 						Train1.SetSwitch4(false);
 						Train2.SetSwitch4(false);
+						switchOn[num] = false;
 					}
 
 				} catch (Exception e) {
 				}
-				switchOn[num] = false;
+				
 			}
 			// Set Switch (num) curved
 			else {
 				try {
-					if (num == 1) {
+					if (num == 1 && mycc.switchClear(2)) {
 						Train1.SetSwitch2(true);
 						Train2.SetSwitch2(true);
+						switchOn[num] = true;
 					}
-					if (num == 3) {
+					if (num == 3 && mycc.switchClear(4)) {
 						Train1.SetSwitch4(true);
 						Train2.SetSwitch4(true);
+						switchOn[num] = true;
 					}
 				} catch (Exception e) {
 				}
-				switchOn[num] = true;
+				
 			}
 			repaint();
 		}
 	}
 
 	public void paint(Graphics g) {
-		if (stopped == false) {
+		if (stopped == false && !waitForReset) {
 			if (first_time == true) {
 				g.setColor(new Color(0, 0, 0));
 				g.drawString("Loading Graphics please wait...", 280, 80);
@@ -425,7 +440,7 @@ public class GUIControlPanel extends Canvas {
 
 	// Set the current trains speed
 		private void setSpeed(int s) {
-			if (!stopped) {
+			if (!stopped && !waitForReset) {
 				//System.out.println("Setting speed");
 				if (whichTrain == 1) {
 				
@@ -557,7 +572,7 @@ public class GUIControlPanel extends Canvas {
 			
 	// Stop the Current Train
 	private void stopTrain() {
-		if (!stopped) {
+		if (!stopped && !waitForReset) {
 			if (whichTrain == 1) {
 				Train1Speed = 0;
 				Train1.StopTrain();

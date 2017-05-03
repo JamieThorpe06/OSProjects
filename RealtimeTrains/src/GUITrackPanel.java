@@ -195,6 +195,7 @@ public class GUITrackPanel extends Canvas {
 		if (((x > 570) && (x < 650)) && ((y > 180) && (y < 220))) {
 			// JOptionPane.showMessageDialog(null, "RESET: x " + x + " Y " + y);
 			ResetAll();
+			//System.out.println("This reset has been called");
 			return true;
 		}
 		// JOptionPane.showMessageDialog(null, "x " + x + " Y " + y);

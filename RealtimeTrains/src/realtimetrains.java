@@ -23,6 +23,7 @@ public class realtimetrains {
 		MyCollisionController mcc = new MyCollisionController(ReedContacts, Train1, Train2);
 
 		GUIControlPanel myGUIControlPanel = new GUIControlPanel(Train1, Train2, mcc);
+		mcc.setControlPanel(myGUIControlPanel);
 		GUITrackPanel myGUITrackPanel = new GUITrackPanel(myGUIControlPanel,
 				Train1, Train2);
 

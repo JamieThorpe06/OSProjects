@@ -4,10 +4,13 @@ import javax.swing.JFrame;
 
 public class MyCollisionController extends Thread{
 	
-	ReedContacts rc;
-	Train train1;
-	Train train2;
-	DfaCanvas dfaCanvas;
+	private ReedContacts rc;
+	private Train train1;
+	private Train train2;
+	private DfaCanvas dfaCanvas;
+	private GUIControlPanel gcp;
+	
+	private boolean planReset;
 	
 	MyCollisionController(ReedContacts reed, Train t1, Train t2){
 		
@@ -35,10 +38,9 @@ public class MyCollisionController extends Thread{
 			} catch (Exception e) {
 				System.out.println("exception in thread sleep" + e.toString());
 			}
+
 			
-			//System.out.println("Controller is awake");
-			
-			if (train2.trainStarted()){
+			if (train2.trainStarted() && !planReset){
 				checkTrain1collisions();
 				checkTrain2collisions();
 			}
@@ -46,7 +48,7 @@ public class MyCollisionController extends Thread{
 			for(int i = 1; i < 16; i++){
 				boolean tripped = rc.readASwitch(i);
 				
-				if(tripped){
+				if(tripped && !planReset){
 					System.out.println("Signal " + i + " tripped");
 					checkTrain1(i);
 					
@@ -58,6 +60,15 @@ public class MyCollisionController extends Thread{
 						checkTrain1toStartTrain2();
 					}
 				}
+			}
+			
+			if(planReset){
+				train1.performReset();
+				train2.performReset();
+				dfaCanvas.update(0,0);
+				gcp.setResetWait(false);
+				gcp.repaint();
+				planReset = false;
 			}
 			
 		}
@@ -81,31 +92,35 @@ public class MyCollisionController extends Thread{
 	}
 	
 	public void checkTrain1toStartTrain2(){
-		// check if current node of each are two apart; changes if one of the switches are flipped
+		// check if current node of each are two apart
 		
-		if(lookAhead(train1, train2) > 2){
+		if(lookAhead(train1, train2) > 1){
 			train2.setTrainStarted(true);
 			train2.release();
-			
 		}
-		
 	}
-	
-	// Do we need to check getSpeedZero in the collision methods?
-	// If it is speed zero and we move forward and then the "ahead" train (behind in switch) is released,
-	// will it check again for collisions before colliding?
-	// Or  if we don't check, could the trains end up stalled for a while?
 	
 	public void checkTrain1collisions(){
 		
 		int dist = lookAhead(train2, train1);
+		int train1place = train1.getCurrent();
+		int future = 3;
 		
-		if (dist == 1 && !train2.getColStop() && !train2.getSpeedZero()){ 
+		boolean switch2Danger = ((train1place==5 || train1place==6) && train1.GetSwitch2());
+		boolean switch4Danger = ((train1place==8 || train1place==9) && train1.GetSwitch4());
+		
+		if (switch2Danger || switch4Danger){
+			future = futureCheck(train2, train1);
+		}
+		
+		if (dist == 1 || future == 1){
 			train1.setColStop(true);
 		}
-		else if (dist == 2){
+		
+		else if (dist == 2 || future == 2){
 			train1.SetSpeed((train1.GetDesiredSpeed())/2);
 		}
+		
 		else{
 			if(train1.getColStop()){
 				train1.colSafe();
@@ -120,11 +135,21 @@ public class MyCollisionController extends Thread{
 	public void checkTrain2collisions(){ 
 		
 		int dist = lookAhead(train1, train2);
+		int train2place = train2.getCurrent();
+		int future = 3;
 		
-		if (dist == 1 && !train1.getColStop() && !train1.getSpeedZero()){
+		boolean startDanger = ((train2place == 0) && train1.trainStarted());
+		boolean switch2Danger = ((train2place==5 || train2place==6) && train2.GetSwitch2());
+		boolean switch4Danger = ((train2place==8 || train2place==9) && train2.GetSwitch4());
+		
+		if (switch2Danger || switch4Danger || startDanger){
+			future = futureCheck(train1, train2);
+		}
+		
+		if (dist == 1 || future == 1){
 			train2.setColStop(true);
 		}
-		else if (dist == 2){
+		else if (dist == 2 || future == 2){
 			train2.SetSpeed((train2.GetDesiredSpeed())/2);
 		}
 		else{
@@ -140,14 +165,13 @@ public class MyCollisionController extends Thread{
 	}
 	
 	// Return the distance between the trains, or 3 if it is further away than 2 nodes
-	// For sake of switch coordination, also check "ahead"'s next node
 	public int lookAhead(Train ahead, Train behind){
 		
 		int check = behind.getCurrent();
 		int i = 0;
 		
 		while(i < 3){
-			if(check == ahead.getCurrent() || check == ahead.getNext(ahead.getCurrent())){
+			if(check == ahead.getCurrent()){
 				return i;
 			}
 			check = behind.getNext(check);
@@ -157,9 +181,46 @@ public class MyCollisionController extends Thread{
 		return i;
 	}
 	
-	public void reset(){
-		dfaCanvas.update(0,0);
+	// For sake of switch coordination, also check "ahead"'s next node
+	public int futureCheck(Train ahead, Train behind){
 		
+		int check = behind.getCurrent();
+		int inFront = ahead.getNext(ahead.getCurrent());
+		int i = 0;
+		
+		while(i < 3){
+			if(check == inFront){
+				return i;
+			}
+			check = behind.getNext(check);
+			i++;
+		}
+		
+		return i;
+	}
+	
+	// Check if the switches are clear, and it is safe to switch tracks
+	public boolean switchClear(int switchNum) {
+		int train1Pos = train1.getCurrent();
+		int train2Pos = train2.getCurrent();
+		
+		if(switchNum == 2){
+			return !(train1Pos == 5 || train1Pos == 6 || train2Pos == 5 || train2Pos == 6);
+		}
+		
+		else if(switchNum == 4){
+			return !(train1Pos == 8 || train1Pos == 9 || train2Pos == 8 || train2Pos == 9);
+		}
+		
+		return true;
+	}
+	
+	public void reset(){
+		planReset = true;
+	}
+	
+	public void setControlPanel(GUIControlPanel gcp){
+		this.gcp = gcp;
 	}
 
 }
